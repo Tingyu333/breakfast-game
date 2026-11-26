@@ -277,10 +277,10 @@
         const AUTO_FILL = 0.93;                                            // 自動定量機停在這裡
 
         // 客人：一般人照職業有不同耐心；熟面孔偶爾出現
-        // 2026-11-26 使用者重新設計的五位客人，取代範本的學生、上班族、阿伯、阿姨、工人。
+        // 2026-11-26 使用者重新設計的五位客人，取代範本的學生、上班族、阿伯、阿姨、工人（趕公車的客人後來改成小狗）。
         // 耐心倍率沿用範本那五個數字（0.85／0.9／1.0／1.1／1.2），照個性分：越急的越沒耐心
         const PEOPLE = [
-            { key: 'bus', name: '趕公車的客人', mult: 0.85, hi: ['公車要來了，快快快', '老闆，我趕車！', '這個，外帶！'], ok: ['趕上了，謝謝！', '公車來了，掰！'], mad: ['公車來了，不等了！', '我先上車了啦'] },
+            { key: 'bus', name: '趕公車的小狗', mult: 0.85, hi: ['汪！公車要來了', '快快快，外帶汪！', '（咬著吐司）嗚汪'], ok: ['趕上了，汪！', '公車來了，掰汪！'], mad: ['公車來了，不等了汪！', '汪……我先上車了'] },
             { key: 'cat', name: '高冷貓咪演員小姐', mult: 0.9, hi: ['……這個。', '別吵，我在背台詞', '經紀人說我只能吃這些'], ok: ['……還可以。', '哼，不錯。'], mad: ['通告要遲到了。', '……走了。'] },
             { key: 'bunny', name: '小白兔小姐', mult: 1.0, hi: ['早安～', '我要這些，謝謝', '沒有紅蘿蔔嗎？那這個好了'], ok: ['謝謝你～', '好香喔！'], mad: ['我、我先走了……', '等好久喔……'] },
             { key: 'mouse', name: '老鼠奶奶', mult: 1.1, hi: ['乖孫，幫奶奶弄這個', '慢慢來沒關係', '今天也來囉'], ok: ['真乖，奶奶下次再來', '吱～好吃'], mad: ['奶奶先回去了……', '吱……等太久了'] },
@@ -934,26 +934,66 @@
             });
         }
 
-        // 客人：站在櫃台後面，頭上是想吃的東西，櫃台上是還願意等多久
+        // 客人：Q 版大頭身（2026-11-26 文組妹妹的建議：拿掉脖子、頭放大 1.3 倍直接坐在身體上、眼睛加反光點）
+        const HEAD = 1.3;
         function drawPerson(c, cu, x, y, mood) {
             const L = cu.look, key = cu.who.key;
             c.save(); c.translate(x, y);
-            if (key === 'dog') {
-                c.fillStyle = '#f2e3c6'; c.beginPath(); c.ellipse(0, 44, 28, 26, 0, 0, TAU); c.fill();
-                c.beginPath(); c.arc(0, 4, 20, 0, TAU); c.fill();
-                c.fillStyle = '#d9bf93'; c.beginPath(); c.ellipse(-19, 6, 7, 15, 0.3, 0, TAU); c.ellipse(19, 6, 7, 15, -0.3, 0, TAU); c.fill();
-                c.fillStyle = '#3b2a20'; c.beginPath(); c.ellipse(0, 10, 4.5, 3.2, 0, 0, TAU); c.fill();
-                if (mood !== 'mad') { c.fillStyle = '#e07a7a'; c.beginPath(); c.ellipse(2, 18, 3.5, 5, 0.2, 0, Math.PI); c.fill(); }
-                eyes(c, -7, 0, 7, mood);
-                c.restore(); return;
-            }
-            if (key === 'bunny' || key === 'sloth' || key === 'mouse' || key === 'cat') { drawAnimal(c, key, L, mood); c.restore(); return; }
-            // 一般人（熟面孔也是，長相在 spawn() 設好）：肩膀、脖子、頭、頭髮
-            c.fillStyle = L.shirt;
+            // 身體：門口的狗狗是毛色，其他人是衣服（顏色隨機）
+            c.fillStyle = key === 'dog' ? '#f2e3c6' : L.shirt;
             c.beginPath(); c.ellipse(0, 50, 30, 26, 0, Math.PI, TAU); c.lineTo(30, 70); c.lineTo(-30, 70); c.fill();
-            if (L.vest) { c.fillStyle = '#4e5a40'; c.fillRect(-26, 32, 14, 38); c.fillRect(12, 32, 14, 38); }   // 老鄰居的背心
-            c.fillStyle = L.skin; c.fillRect(-6, 16, 12, 12);
-            c.beginPath(); c.arc(0, 2, 18, 0, TAU); c.fill();
+            collar(c, key, L);
+            // 頭：用原本的座標畫（頭心 0,2、半徑 18），整個放大後直接坐在身體上
+            c.save(); c.translate(0, 4); c.scale(HEAD, HEAD);
+            const head = HEADS[key] || humanHead;
+            head(c, L, mood);
+            c.restore();
+            c.restore();
+        }
+        // 每位的領口、配件（畫在身體上、頭的下面）
+        function collar(c, key, L) {
+            if (key === 'bunny') {
+                // 小白兔小姐：蕾絲圓領
+                c.fillStyle = '#fffaf3';
+                c.beginPath(); c.ellipse(0, 30, 16, 8, 0, 0, TAU); c.fill();
+                for (let k = -3; k <= 3; k++) { c.beginPath(); c.arc(k * 4.6, 37.5 - Math.abs(k) * 0.9, 2.6, 0, TAU); c.fill(); }
+            } else if (key === 'sloth') {
+                // 樹懶阿公：POLO 衫領、兩顆扣子
+                c.fillStyle = '#f3ece0';
+                c.beginPath(); c.moveTo(-1, 28); c.lineTo(-15, 28); c.lineTo(-9, 39); c.closePath(); c.fill();
+                c.beginPath(); c.moveTo(1, 28); c.lineTo(15, 28); c.lineTo(9, 39); c.closePath(); c.fill();
+                c.fillStyle = 'rgba(255,255,255,0.85)'; c.beginPath(); c.arc(0, 38, 1.5, 0, TAU); c.arc(0, 44, 1.5, 0, TAU); c.fill();
+            } else if (key === 'mouse') {
+                // 老鼠奶奶：開襟毛衣的領口、珍珠項鍊
+                c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = 1.5;
+                c.beginPath(); c.moveTo(-10, 30); c.lineTo(0, 46); c.lineTo(10, 30); c.stroke();
+                c.fillStyle = '#fffaf0'; for (let k = -4; k <= 4; k++) { c.beginPath(); c.arc(k * 3.4, 35 - Math.abs(k) * 0.9, 1.7, 0, TAU); c.fill(); }
+            } else if (key === 'cat') {
+                // 高冷貓咪演員小姐：紅色絲巾
+                c.fillStyle = '#c0392b';
+                c.beginPath(); c.moveTo(-15, 28); c.quadraticCurveTo(0, 38, 15, 28); c.lineTo(11, 36); c.quadraticCurveTo(0, 42, -11, 36); c.closePath(); c.fill();
+                c.beginPath(); c.moveTo(6, 34); c.lineTo(13, 49); c.lineTo(3, 44); c.closePath(); c.fill();
+            } else if (key === 'bus') {
+                // 趕公車的小狗：雙肩背包的背帶
+                c.fillStyle = '#4a5a7a';
+                c.beginPath(); c.moveTo(-17, 28); c.lineTo(-11, 28); c.lineTo(-17, 70); c.lineTo(-24, 70); c.closePath(); c.fill();
+                c.beginPath(); c.moveTo(17, 28); c.lineTo(11, 28); c.lineTo(17, 70); c.lineTo(24, 70); c.closePath(); c.fill();
+            } else if (key === 'dog') {
+                // 門口的狗狗：紅項圈加金色名牌（頭跟身體同色，有項圈才分得開）
+                c.fillStyle = '#c0392b'; c.beginPath(); c.ellipse(0, 36.5, 18, 4.5, 0, 0, TAU); c.fill();
+                c.fillStyle = '#e8c35a'; c.beginPath(); c.arc(0, 43, 3.4, 0, TAU); c.fill();
+            } else if (L.vest) {
+                c.fillStyle = '#4e5a40'; c.fillRect(-26, 32, 14, 38); c.fillRect(12, 32, 14, 38);   // 老鄰居的背心
+            }
+        }
+        // 腮紅：眼睛正下方的橫橢圓
+        function blush(c, y = 7, a = 0.45, rx = 3.4) {
+            c.fillStyle = `rgba(240,120,140,${a})`;
+            c.beginPath(); c.ellipse(-9.5, y, rx, rx * 0.6, 0, 0, TAU); c.ellipse(9.5, y, rx, rx * 0.6, 0, 0, TAU); c.fill();
+        }
+        // 人（熟面孔：阿嬤、刮刮樂大叔、老鄰居）
+        function humanHead(c, L, mood) {
+            c.fillStyle = L.skin; c.beginPath(); c.arc(0, 2, 18, 0, TAU); c.fill();
             c.fillStyle = L.hair;
             const style = L.style;
             if (style === 'short') { c.beginPath(); c.arc(0, -2, 18.5, Math.PI * 1.02, TAU * 0.99); c.quadraticCurveTo(10, -10, -18, -2); c.fill(); }
@@ -961,88 +1001,175 @@
             else if (style === 'bun') { c.beginPath(); c.arc(0, -2, 18.5, Math.PI, TAU); c.fill(); c.beginPath(); c.arc(0, -21, 8, 0, TAU); c.fill(); }
             else if (style === 'cap' || style === 'lotto') { c.fillStyle = style === 'lotto' ? '#c0392b' : L.shirt; c.beginPath(); c.arc(0, -4, 18.5, Math.PI, TAU); c.fill(); c.fillRect(-2, -6, 26, 5); if (style === 'lotto') { c.fillStyle = '#fff'; c.font = `700 8px ${SANS}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('中', 0, -12); } }
             eyes(c, -6.5, 1, 6.5, mood);
-            if (L.glasses) { c.strokeStyle = '#333'; c.lineWidth = 1.2; c.beginPath(); c.arc(-6.5, 1, 5, 0, TAU); c.moveTo(11.5, 1); c.arc(6.5, 1, 5, 0, TAU); c.moveTo(-1.5, 1); c.lineTo(1.5, 1); c.stroke(); }
+            if (L.glasses) { c.strokeStyle = '#333'; c.lineWidth = 1.1; c.beginPath(); c.arc(-6.5, 1, 5, 0, TAU); c.moveTo(11.5, 1); c.arc(6.5, 1, 5, 0, TAU); c.moveTo(-1.5, 1); c.lineTo(1.5, 1); c.stroke(); }
             mouth(c, 0, 10, mood);
-            if (mood === 'happy') { c.fillStyle = 'rgba(230,120,110,0.35)'; c.beginPath(); c.arc(-11, 7, 3.5, 0, TAU); c.arc(11, 7, 3.5, 0, TAU); c.fill(); }
-            if (key === 'bus') {
-                // 趕公車的客人：斜背包的帶子、一直冒汗（等越久汗越多）
-                c.strokeStyle = '#4a3a2e'; c.lineWidth = 3; c.beginPath(); c.moveTo(-20, 34); c.lineTo(16, 70); c.stroke();
-                const drops = mood === 'calm' ? 1 : 2;
-                c.fillStyle = '#8fd0f0';
-                for (let k = 0; k < drops; k++) { const dy = reduceMotion ? 0 : ((G.clock * 1.6 + k * 0.5) % 1) * 8; c.beginPath(); c.moveTo(18 + k * 4, -8 + dy - k * 6); c.quadraticCurveTo(22 + k * 4, -1 + dy - k * 6, 18 + k * 4, 0 + dy - k * 6); c.quadraticCurveTo(14 + k * 4, -1 + dy - k * 6, 18 + k * 4, -8 + dy - k * 6); c.fill(); }
-            }
-            c.restore();
+            if (mood === 'happy') blush(c);
         }
-        // 動物客人：小白兔小姐、樹懶阿公、老鼠奶奶、高冷貓咪演員小姐（衣服顏色隨機，其他固定）
-        function drawAnimal(c, key, L, mood) {
-            // 身體（衣服）
-            c.fillStyle = L.shirt;
-            c.beginPath(); c.ellipse(0, 50, 30, 26, 0, Math.PI, TAU); c.lineTo(30, 70); c.lineTo(-30, 70); c.fill();
-            const head = (fur, r = 18) => { c.fillStyle = fur; c.fillRect(-6, 16, 12, 12); c.beginPath(); c.arc(0, 2, r, 0, TAU); c.fill(); };
-            const blush = () => { c.fillStyle = 'rgba(240,130,140,0.4)'; c.beginPath(); c.arc(-11, 8, 3.5, 0, TAU); c.arc(11, 8, 3.5, 0, TAU); c.fill(); };
-            if (key === 'bunny') {
-                // 小白兔小姐：長耳朵（粉紅內耳）、耳朵上一個蝴蝶結
-                c.fillStyle = '#fbf8f4'; c.strokeStyle = '#e3d9cd'; c.lineWidth = 1;
-                [[-8, -0.18], [8, 0.18]].forEach(([ex, rot]) => { c.beginPath(); c.ellipse(ex, -24, 5.5, 15, rot, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#f4b8c4'; c.beginPath(); c.ellipse(ex, -23, 2.6, 10.5, rot, 0, TAU); c.fill(); c.fillStyle = '#fbf8f4'; });
-                head('#fbf8f4'); c.beginPath(); c.arc(0, 2, 18, 0, TAU); c.stroke();
-                c.fillStyle = '#e0505f'; c.beginPath(); c.moveTo(-5, -15); c.lineTo(-13, -19); c.lineTo(-13, -11); c.closePath(); c.moveTo(-5, -15); c.lineTo(3, -19); c.lineTo(3, -11); c.closePath(); c.fill(); c.beginPath(); c.arc(-5, -15, 2.2, 0, TAU); c.fill();
+        const HEADS = {
+            // 門口的狗狗（熟面孔）：奶油色、垂耳
+            dog(c, L, mood) {
+                c.fillStyle = '#f2e3c6'; c.strokeStyle = '#d6bf98'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 4, 20, 0, TAU); c.fill(); c.stroke();
+                c.fillStyle = '#d9bf93'; c.beginPath(); c.ellipse(-19, 6, 7, 15, 0.3, 0, TAU); c.ellipse(19, 6, 7, 15, -0.3, 0, TAU); c.fill();
+                c.fillStyle = '#3b2a20'; c.beginPath(); c.ellipse(0, 10, 4.5, 3.2, 0, 0, TAU); c.fill();
+                if (mood !== 'mad') { c.fillStyle = '#e07a7a'; c.beginPath(); c.ellipse(2, 18, 3.5, 5, 0.2, 0, Math.PI); c.fill(); }
+                eyes(c, -7, 2, 7, mood);
+                if (mood === 'happy') blush(c, 9);
+            },
+            // 趕公車的小狗：柴犬、尖耳朵、白眉毛點點、頭上兩根呆毛、嘴裡咬吐司、急的時候冒汗
+            bus(c, L, mood) {
+                c.fillStyle = '#d98f45'; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 8 * sx, -8); c.lineTo(ex + 1 * sx, -25); c.lineTo(ex + 9 * sx, -5); c.closePath(); c.fill(); });
+                c.fillStyle = '#f6d2a6'; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 4 * sx, -9); c.lineTo(ex + 1 * sx, -20); c.lineTo(ex + 5.5 * sx, -8); c.closePath(); c.fill(); });
+                c.fillStyle = '#e3a05a'; c.beginPath(); c.arc(0, 2, 18, 0, TAU); c.fill();
+                c.fillStyle = '#fff4e4'; c.beginPath(); c.ellipse(0, 9, 13, 9, 0, 0, TAU); c.fill();
+                c.beginPath(); c.ellipse(-6.5, -5.5, 2.4, 1.6, 0, 0, TAU); c.ellipse(6.5, -5.5, 2.4, 1.6, 0, 0, TAU); c.fill();
+                c.strokeStyle = '#c87a33'; c.lineWidth = 1.8; c.lineCap = 'round';
+                c.beginPath(); c.moveTo(-1, -15.5); c.quadraticCurveTo(-3, -23, 1, -24); c.moveTo(1.5, -15.5); c.quadraticCurveTo(3, -21, 6.5, -20.5); c.stroke();
                 eyes(c, -6.5, 1, 6.5, mood);
-                c.fillStyle = '#f08a9c'; c.beginPath(); c.moveTo(-2.5, 6); c.lineTo(2.5, 6); c.lineTo(0, 8.5); c.closePath(); c.fill();
+                c.fillStyle = '#3b2a20'; c.beginPath(); c.ellipse(0, 6, 2.8, 2, 0, 0, TAU); c.fill();
+                if (mood === 'calm' || mood === 'tense') {
+                    // 咬著一片吐司
+                    c.save(); c.translate(4, 13); c.rotate(0.18);
+                    c.fillStyle = '#c98a3e'; rr(c, -6, -5, 12, 10, 3); c.fill();
+                    c.fillStyle = '#f6dca0'; rr(c, -4.6, -3.6, 9.2, 7.2, 2); c.fill();
+                    c.restore();
+                } else mouth(c, 0, 12, mood);
+                if (mood === 'happy') blush(c, 8);
+                if (mood === 'tense' || mood === 'mad') {
+                    const dy = reduceMotion ? 0 : ((G.clock * 1.6) % 1) * 6;
+                    c.fillStyle = '#8fd0f0'; c.beginPath(); c.moveTo(-17, -6 + dy); c.quadraticCurveTo(-13, 1 + dy, -17, 2 + dy); c.quadraticCurveTo(-21, 1 + dy, -17, -6 + dy); c.fill();
+                }
+            },
+            // 小白兔小姐：長耳朵往外斜、蝴蝶結、深一點的輪廓線、水汪汪的大眼睛、生氣是氣噗噗
+            bunny(c, L, mood) {
+                const fur = '#fffdf9', line = '#c9b49e';
+                c.lineWidth = 1.8; c.strokeStyle = line;
+                [[-8, -0.22], [8, 0.22]].forEach(([ex, rot]) => {
+                    c.fillStyle = fur; c.beginPath(); c.ellipse(ex, -23, 5.5, 14, rot, 0, TAU); c.fill(); c.stroke();
+                    c.fillStyle = '#f5a9ba'; c.beginPath(); c.ellipse(ex, -22, 2.5, 9.5, rot, 0, TAU); c.fill();
+                });
+                c.fillStyle = fur; c.beginPath(); c.arc(0, 2, 18, 0, TAU); c.fill(); c.lineWidth = 2; c.stroke();
+                c.fillStyle = '#e0505f'; c.beginPath(); c.moveTo(-6, -14); c.lineTo(-14, -18); c.lineTo(-14, -10); c.closePath(); c.moveTo(-6, -14); c.lineTo(2, -18); c.lineTo(2, -10); c.closePath(); c.fill(); c.beginPath(); c.arc(-6, -14, 2.2, 0, TAU); c.fill();
+                eyes(c, -6.5, 1, 6.5, mood, { oval: true, thin: true });
+                c.fillStyle = '#f08a9c'; c.beginPath(); c.moveTo(-2.2, 6.5); c.lineTo(2.2, 6.5); c.lineTo(0, 8.6); c.closePath(); c.fill();
+                if (mood === 'mad') { blush(c, 8, 0.75, 4.6); mouth(c, 0, 12.5, 'pout'); }   // 氣噗噗：臉頰鼓起來、嘟嘴
+                else { mouth(c, 0, 12, mood); if (mood !== 'tense') blush(c, 8); }
+            },
+            // 老鼠奶奶：奶茶灰、大圓耳、頭頂白色燙髮、細金框眼鏡、腮紅、兩根鬍鬚
+            mouse(c, L, mood) {
+                const fur = '#b8a596';
+                c.fillStyle = fur; [-15, 15].forEach(ex => { c.beginPath(); c.arc(ex, -13, 10.5, 0, TAU); c.fill(); });
+                c.fillStyle = '#f4b6c0'; [-15, 15].forEach(ex => { c.beginPath(); c.arc(ex, -13, 6.5, 0, TAU); c.fill(); });
+                c.fillStyle = fur; c.beginPath(); c.arc(0, 2, 17, 0, TAU); c.fill();
+                c.fillStyle = '#fbf7f0'; c.strokeStyle = '#ddd3c6'; c.lineWidth = 0.8;
+                [[-5, -13.5], [0, -16], [5, -13.5], [-2.5, -11], [2.5, -11]].forEach(([px, py]) => { c.beginPath(); c.arc(px, py, 3.6, 0, TAU); c.fill(); c.stroke(); });
+                c.fillStyle = '#e9dfd5'; c.beginPath(); c.ellipse(0, 8.5, 8.5, 6.5, 0, 0, TAU); c.fill();
+                eyes(c, -6.5, 1, 6.5, mood);
+                c.strokeStyle = '#c9a85a'; c.lineWidth = 0.9; c.beginPath(); c.arc(-6.5, 1, 4.8, 0, TAU); c.moveTo(11.3, 1); c.arc(6.5, 1, 4.8, 0, TAU); c.moveTo(-1.7, 1); c.lineTo(1.7, 1); c.stroke();
+                blush(c, 8, mood === 'happy' ? 0.55 : 0.35, 3);
+                c.fillStyle = '#f08a9c'; c.beginPath(); c.arc(0, 6, 2.2, 0, TAU); c.fill();
+                c.strokeStyle = 'rgba(90,75,60,0.5)'; c.lineWidth = 0.8;
+                [-1, 1].forEach(sx => { [-1, 1].forEach(dy => { c.beginPath(); c.moveTo(sx * 6, 8 + dy * 0.6); c.lineTo(sx * 16, 7 + dy * 2.4); c.stroke(); }); });
                 mouth(c, 0, 12, mood);
-                if (mood !== 'mad') blush();
-            } else if (key === 'sloth') {
-                // 樹懶阿公：灰棕色毛、淺色臉、眼睛旁邊兩塊深色眼斑、頭頂一撮白毛、一直很睏
-                head('#a8927a', 18.5);
-                c.fillStyle = '#ecdfca'; c.beginPath(); c.ellipse(0, 3, 15, 12, 0, 0, TAU); c.fill();
-                c.fillStyle = '#6e5642'; [[-7.5, -0.45], [7.5, 0.45]].forEach(([ex, rot]) => { c.beginPath(); c.ellipse(ex, 3, 6.8, 3.6, rot, 0, TAU); c.fill(); });   // 眼斑往外垂（樹懶的招牌表情）
-                c.strokeStyle = '#f3f0ea'; c.lineWidth = 2; c.lineCap = 'round';
-                [-4, 0, 4].forEach(dx => { c.beginPath(); c.moveTo(dx, -15); c.quadraticCurveTo(dx + 1, -21, dx + 3, -20); c.stroke(); });
-                eyes(c, -6.5, 1.5, 6.5, mood === 'calm' ? 'sleepy' : mood, '#f3ead8');
-                c.fillStyle = '#3b2a20'; c.beginPath(); c.ellipse(0, 7, 3, 2, 0, 0, TAU); c.fill();
-                mouth(c, 0, 12, mood);
-            } else if (key === 'mouse') {
-                // 老鼠奶奶：灰毛、大圓耳朵、粉紅鼻子、鬍鬚、圓眼鏡、珍珠項鍊
-                c.fillStyle = '#aaa5a1'; [-15, 15].forEach(ex => { c.beginPath(); c.arc(ex, -13, 10.5, 0, TAU); c.fill(); });
-                c.fillStyle = '#f2b8bf'; [-15, 15].forEach(ex => { c.beginPath(); c.arc(ex, -13, 6.5, 0, TAU); c.fill(); });
-                head('#aaa5a1', 17);
-                c.fillStyle = '#d8d3ce'; c.beginPath(); c.ellipse(0, 8, 9, 7, 0, 0, TAU); c.fill();
-                eyes(c, -6.5, 0, 6.5, mood);
-                c.strokeStyle = '#6a5a4a'; c.lineWidth = 1.2; c.beginPath(); c.arc(-6.5, 0, 4.8, 0, TAU); c.moveTo(11.3, 0); c.arc(6.5, 0, 4.8, 0, TAU); c.moveTo(-1.7, 0); c.lineTo(1.7, 0); c.stroke();
-                c.fillStyle = '#f08a9c'; c.beginPath(); c.arc(0, 5.5, 2.4, 0, TAU); c.fill();
-                c.strokeStyle = 'rgba(80,70,60,0.55)'; c.lineWidth = 0.8;
-                [[-1, 1], [1, 1]].forEach(([sx]) => { [-1.5, 1.5].forEach(dy => { c.beginPath(); c.moveTo(sx * 5, 7 + dy * 0.5); c.lineTo(sx * 17, 6 + dy * 2); c.stroke(); }); });
-                mouth(c, 0, 12, mood);
-                c.fillStyle = '#fffaf0'; for (let k = -4; k <= 4; k++) { c.beginPath(); c.arc(k * 3.2, 30 + Math.abs(k) * -0.8 + 2, 1.6, 0, TAU); c.fill(); }
-            } else if (key === 'cat') {
-                // 高冷貓咪演員小姐：藍灰色貓、尖耳朵、墨鏡推在頭上、紅色絲巾、眼睛半閉（高冷）
-                c.fillStyle = '#b33a2f'; c.beginPath(); c.moveTo(-14, 24); c.quadraticCurveTo(0, 34, 14, 24); c.lineTo(10, 32); c.quadraticCurveTo(0, 38, -10, 32); c.closePath(); c.fill();
-                c.beginPath(); c.moveTo(6, 30); c.lineTo(12, 44); c.lineTo(3, 40); c.closePath(); c.fill();
-                c.fillStyle = '#8f98a2'; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 8 * sx, -10); c.lineTo(ex + 3 * sx, -27); c.lineTo(ex + 9 * sx, -6); c.closePath(); c.fill(); });
-                c.fillStyle = '#f2b8bf'; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 4 * sx, -11); c.lineTo(ex + 2.5 * sx, -22); c.lineTo(ex + 6 * sx, -9); c.closePath(); c.fill(); });
-                head('#8f98a2');
-                c.fillStyle = '#1f1d1c'; rr(c, -15, -13, 12, 7, 3); c.fill(); rr(c, 3, -13, 12, 7, 3); c.fill(); c.fillRect(-3, -11, 6, 1.6);
-                c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(-12, -12, 3, 1.5); c.fillRect(6, -12, 3, 1.5);
-                if (mood === 'calm') {
-                    // 高冷：眼睛半閉、往旁邊看
-                    c.fillStyle = '#e8d46a'; [-6.5, 6.5].forEach(ex => { c.beginPath(); c.ellipse(ex, 2, 3.6, 2.2, 0, 0, TAU); c.fill(); });
-                    c.fillStyle = '#1f1d1c'; [-6.5, 6.5].forEach(ex => { c.beginPath(); c.ellipse(ex + 1.6, 2.4, 1, 1.8, 0, 0, TAU); c.fill(); });
-                    c.strokeStyle = '#3b3f45'; c.lineWidth = 1.6; c.lineCap = 'round'; [-6.5, 6.5].forEach(ex => { c.beginPath(); c.moveTo(ex - 4.2, 0.8); c.lineTo(ex + 4.2, 0.8); c.stroke(); });
-                } else eyes(c, -6.5, 1.5, 6.5, mood);
-                c.fillStyle = '#e88a9a'; c.beginPath(); c.moveTo(-2, 6.5); c.lineTo(2, 6.5); c.lineTo(0, 8.5); c.closePath(); c.fill();
-                c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 0.8;
-                [-1, 1].forEach(sx => { [0, 2.5].forEach(dy => { c.beginPath(); c.moveTo(sx * 6, 9 + dy); c.lineTo(sx * 18, 7 + dy * 1.6); c.stroke(); }); });
-                if (mood === 'calm') { c.strokeStyle = '#5a3a3a'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-3, 12); c.lineTo(3, 12); c.stroke(); }
-                else mouth(c, 0, 12, mood);
-                c.fillStyle = '#2a2220'; c.beginPath(); c.arc(9, 9, 0.9, 0, TAU); c.fill();   // 美人痣
-            }
-        }
-        function eyes(c, lx, y, rx, mood, col = '#2a2220') {
+            },
+            // 高冷貓咪演員小姐：藍灰色、尖耳朵、墨鏡推在頭上、半瞇眼加上翹睫毛、ω 嘴一邊上揚；生氣時墨鏡滑下來
+            cat(c, L, mood) {
+                const fur = '#8396b0';
+                c.fillStyle = fur; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 8 * sx, -10); c.lineTo(ex + 3 * sx, -27); c.lineTo(ex + 9 * sx, -6); c.closePath(); c.fill(); });
+                c.fillStyle = '#f3a3b5'; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 4 * sx, -11); c.lineTo(ex + 2.5 * sx, -22); c.lineTo(ex + 6 * sx, -9); c.closePath(); c.fill(); });
+                c.fillStyle = fur; c.beginPath(); c.arc(0, 2, 18, 0, TAU); c.fill();
+                c.fillStyle = '#eef1f6'; c.beginPath(); c.ellipse(0, 9.5, 8, 5.5, 0, 0, TAU); c.fill();
+                const shades = gy => { c.fillStyle = '#1f1d1c'; rr(c, -15, gy, 12, 7, 3); c.fill(); rr(c, 3, gy, 12, 7, 3); c.fill(); c.fillRect(-3, gy + 2, 6, 1.6); c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(-12, gy + 1, 3, 1.5); c.fillRect(6, gy + 1, 3, 1.5); };
+                if (mood === 'mad') {
+                    // 耍大牌：墨鏡滑下來遮住眼睛，上面兩道怒眉
+                    shades(-2.5);
+                    c.strokeStyle = '#2a2a30'; c.lineWidth = 1.8; c.lineCap = 'round';
+                    c.beginPath(); c.moveTo(-12, -8); c.lineTo(-4, -5.5); c.moveTo(12, -8); c.lineTo(4, -5.5); c.stroke();
+                } else {
+                    shades(-14);
+                    if (mood === 'calm') {
+                        // 高冷：半瞇眼，眼尾上挑，睫毛往外翹
+                        [-1, 1].forEach(sx => {
+                            const ex = 6.5 * sx;
+                            c.fillStyle = '#ecd46a'; c.beginPath(); c.ellipse(ex, 2.2, 3.8, 2.1, sx * -0.15, 0, TAU); c.fill();
+                            c.fillStyle = '#1f1d1c'; c.beginPath(); c.ellipse(ex + 1.2, 2.5, 0.9, 1.7, 0, 0, TAU); c.fill();
+                            c.strokeStyle = '#2a2a30'; c.lineWidth = 1.7; c.lineCap = 'round';
+                            c.beginPath(); c.moveTo(ex - 4 * sx, 1.6); c.quadraticCurveTo(ex, -0.2, ex + 4.6 * sx, -0.6); c.stroke();
+                            c.lineWidth = 1.1; c.beginPath(); c.moveTo(ex + 4.2 * sx, -0.4); c.lineTo(ex + 6.4 * sx, -2.6); c.moveTo(ex + 2.6 * sx, -0.6); c.lineTo(ex + 4.2 * sx, -3.2); c.stroke();
+                        });
+                    } else eyes(c, -6.5, 1.5, 6.5, mood);
+                }
+                c.fillStyle = '#e8899c'; c.beginPath(); c.moveTo(-2, 6.5); c.lineTo(2, 6.5); c.lineTo(0, 8.4); c.closePath(); c.fill();
+                if (mood === 'calm' || mood === 'happy') {
+                    // ω 嘴，右邊嘴角微微上揚（傲嬌）
+                    c.strokeStyle = '#5a3a3a'; c.lineWidth = 1.3; c.lineCap = 'round';
+                    c.beginPath(); c.moveTo(-4, 10); c.quadraticCurveTo(-2, 12.5, 0, 10); c.quadraticCurveTo(2.2, 12.5, 4.6, 9); c.stroke();
+                } else mouth(c, 0, 12, mood);
+                c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 0.8;
+                [-1, 1].forEach(sx => { [0, 2.5].forEach(dy => { c.beginPath(); c.moveTo(sx * 7, 9 + dy); c.lineTo(sx * 18, 7 + dy * 1.6); c.stroke(); }); });
+                blush(c, 7.5, mood === 'happy' ? 0.5 : 0.3, 3);
+                c.fillStyle = '#2a2220'; c.beginPath(); c.arc(9.5, 10.5, 0.9, 0, TAU); c.fill();   // 美人痣
+            },
+            // 樹懶阿公：芥末黃毛線帽、白色垂長眉、往外下垂的淚滴眼斑、天生微笑；眼睛一直閉著，旁邊飄「z」
+            sloth(c, L, mood) {
+                c.fillStyle = '#8a7058'; c.beginPath(); c.arc(0, 2, 18.5, 0, TAU); c.fill();
+                c.fillStyle = '#fbf3e4'; c.beginPath(); c.ellipse(0, 4.5, 15, 12.5, 0, 0, TAU); c.fill();
+                c.fillStyle = '#5e4632';
+                [-1, 1].forEach(sx => {
+                    c.beginPath(); c.ellipse(7.5 * sx, 3.8, 6.4, 3.3, sx * 0.55, 0, TAU); c.fill();
+                    c.beginPath(); c.arc(12.5 * sx, 7.5, 2.4, 0, TAU); c.fill();   // 淚滴的尾巴往外往下
+                });
+                // 毛線帽
+                c.fillStyle = '#d9a520'; c.beginPath(); c.arc(0, -6, 17.5, Math.PI, TAU); c.fill();
+                c.fillStyle = '#b8861a'; rr(c, -18.5, -9, 37, 6, 2.5); c.fill();
+                c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 1; [-10, -4, 2, 8].forEach(px => { c.beginPath(); c.moveTo(px, -9); c.lineTo(px + 1, -20 + Math.abs(px) * 0.4); c.stroke(); });
+                c.fillStyle = '#f3e3b0'; c.beginPath(); c.arc(0, -24.5, 4.2, 0, TAU); c.fill();
+                // 白色垂長眉
+                c.strokeStyle = '#f6f2ea'; c.lineWidth = 2.2; c.lineCap = 'round';
+                [-1, 1].forEach(sx => { c.beginPath(); c.moveTo(2.5 * sx, -2.2); c.quadraticCurveTo(10 * sx, -3.5, 15 * sx, 1.5); c.stroke(); });
+                // 眼睛：一直閉著（開心是 ^ ^，平常是睏睏的 ‿）
+                eyes(c, -7, 3.5, 7, mood === 'happy' ? 'happy' : 'sleepy', { col: '#f6ecd9' });
+                c.fillStyle = '#3b2a20'; c.beginPath(); c.ellipse(0, 8.5, 3, 2, 0, 0, TAU); c.fill();
+                if (mood === 'mad') mouth(c, 0, 13, 'pout');
+                else { c.strokeStyle = '#7a3a32'; c.lineWidth = 1.6; c.lineCap = 'round'; c.beginPath(); c.arc(0, 10.5, mood === 'tense' ? 2.6 : 4, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke(); }
+                if (mood === 'happy') {
+                    blush(c, 9.5);
+                    // 帽子上一朵小花
+                    c.fillStyle = '#f5a9ba'; for (let k = 0; k < 5; k++) { const a = k * TAU / 5; c.beginPath(); c.arc(11 + Math.cos(a) * 2.4, -11 + Math.sin(a) * 2.4, 1.8, 0, TAU); c.fill(); }
+                    c.fillStyle = '#f6d54a'; c.beginPath(); c.arc(11, -11, 1.4, 0, TAU); c.fill();
+                }
+                if (mood === 'mad' && !reduceMotion) {
+                    // 頭上冒一縷煙
+                    c.fillStyle = 'rgba(150,150,150,0.6)'; const t = (G.clock * 0.8) % 1;
+                    [0, 0.5].forEach(o => { const k = (t + o) % 1; c.beginPath(); c.arc(14 + k * 3, -24 - k * 8, 2 + k * 2.5, 0, TAU); c.fill(); });
+                }
+                if (mood === 'calm' || mood === 'tense') {
+                    // 慢吞吞：旁邊飄一個 z
+                    const k = reduceMotion ? 0.5 : (G.clock * 0.5) % 1;
+                    c.globalAlpha *= 1 - k * 0.7; c.fillStyle = '#6a5a4a'; c.font = `700 ${7 + k * 3}px ${SANS}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+                    c.fillText('z', 20 + k * 3, -16 - k * 6);
+                    c.globalAlpha /= 1 - k * 0.7;
+                }
+            },
+        };
+        // 眼睛：圓點加白色反光點（opt.oval 直的橢圓、兩顆反光；opt.thin 生氣眉毛細一點；opt.col 顏色）
+        function eyes(c, lx, y, rx, mood, opt = {}) {
+            const col = opt.col || '#2a2220';
             c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1.8; c.lineCap = 'round';
             [lx, rx].forEach((ex, k) => {
                 if (mood === 'happy') { c.beginPath(); c.arc(ex, y + 1.5, 3, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
-                else if (mood === 'sleepy') { c.beginPath(); c.moveTo(ex - 3, y + 0.5); c.quadraticCurveTo(ex, y + 2.5, ex + 3, y + 0.5); c.stroke(); }   // 樹懶阿公：睏睏的眼睛
-                else { c.beginPath(); c.arc(ex, y, 2, 0, TAU); c.fill(); }
-                if (mood === 'mad' || mood === 'tense') { c.beginPath(); const s = k ? -1 : 1; c.moveTo(ex - 3.5 * s, y - 6 + (mood === 'mad' ? -1.5 : 0)); c.lineTo(ex + 3.5 * s, y - 4 + (mood === 'mad' ? 1.5 : 0)); c.stroke(); }
+                else if (mood === 'sleepy') { c.beginPath(); c.moveTo(ex - 3, y); c.quadraticCurveTo(ex, y + 2.5, ex + 3, y); c.stroke(); }
+                else {
+                    c.fillStyle = col; c.beginPath();
+                    if (opt.oval) c.ellipse(ex, y, 2.2, 3.1, 0, 0, TAU); else c.arc(ex, y, 2.4, 0, TAU);
+                    c.fill();
+                    c.fillStyle = '#ffffff';
+                    c.beginPath(); c.arc(ex - 0.8, y - (opt.oval ? 1.3 : 0.9), opt.oval ? 0.95 : 0.85, 0, TAU); c.fill();
+                    if (opt.oval) { c.beginPath(); c.arc(ex + 0.8, y + 1.1, 0.5, 0, TAU); c.fill(); }
+                }
+                if (mood === 'mad' || mood === 'tense') {
+                    c.strokeStyle = col; c.lineWidth = opt.thin ? 1.1 : 1.8;
+                    c.beginPath(); const s = k ? -1 : 1; c.moveTo(ex - 3.5 * s, y - 6 + (mood === 'mad' ? -1.5 : 0)); c.lineTo(ex + 3.5 * s, y - 4 + (mood === 'mad' ? 1.5 : 0)); c.stroke();
+                }
             });
         }
         function mouth(c, x, y, mood) {
@@ -1050,6 +1177,7 @@
             if (mood === 'happy') c.arc(x, y - 2, 5, 0.2 * Math.PI, 0.8 * Math.PI);
             else if (mood === 'mad') c.arc(x, y + 5, 5, 1.2 * Math.PI, 1.8 * Math.PI);
             else if (mood === 'tense') { c.moveTo(x - 4, y + 1); c.lineTo(x + 4, y); }
+            else if (mood === 'pout') { c.lineWidth = 1.5; c.ellipse(x, y, 1.8, 2.3, 0, 0, TAU); }   // 嘟嘴
             else c.arc(x, y - 1, 3.5, 0.25 * Math.PI, 0.75 * Math.PI);
             c.stroke();
         }
@@ -1074,7 +1202,7 @@
                 c.restore();
                 if (cu.state === 'angry' || (cu.state === 'wait' && frac < 0.3)) {
                     // 頭上冒青筋
-                    c.strokeStyle = K.shu; c.lineWidth = 2; const vx = x + 15, vy = y - 16;
+                    c.strokeStyle = K.shu; c.lineWidth = 2; const vx = x + 31, vy = y + 2;   // 大頭以後移到臉旁邊的空白處（不要蓋在耳朵上）
                     c.beginPath(); c.moveTo(vx - 4, vy - 1); c.lineTo(vx - 1, vy - 1); c.lineTo(vx - 1, vy - 4); c.moveTo(vx + 4, vy - 1); c.lineTo(vx + 1, vy - 1); c.lineTo(vx + 1, vy - 4); c.moveTo(vx - 4, vy + 2); c.lineTo(vx - 1, vy + 2); c.lineTo(vx - 1, vy + 5); c.moveTo(vx + 4, vy + 2); c.lineTo(vx + 1, vy + 2); c.lineTo(vx + 1, vy + 5); c.stroke();
                 }
                 // 頭上的泡泡：想吃什麼（剛說了話就先顯示說的話）
