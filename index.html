@@ -280,7 +280,7 @@
         // 2026-11-26 使用者重新設計的五位客人，取代範本的學生、上班族、阿伯、阿姨、工人（趕公車的客人後來改成小狗）。
         // 耐心倍率沿用範本那五個數字（0.85／0.9／1.0／1.1／1.2），照個性分：越急的越沒耐心
         const PEOPLE = [
-            { key: 'bus', name: '趕公車的小狗', mult: 0.85, hi: ['汪！公車要來了', '快快快，外帶汪！', '（咬著吐司）嗚汪'], ok: ['趕上了，汪！', '公車來了，掰汪！'], mad: ['公車來了，不等了汪！', '汪……我先上車了'] },
+            { key: 'bus', name: '趕公車的小狗', mult: 0.85, hi: ['汪！公車要來了', '快快快，外帶汪！', '要趕不上了汪'], ok: ['趕上了，汪！', '公車來了，掰汪！'], mad: ['公車來了，不等了汪！', '汪……我先上車了'] },
             { key: 'cat', name: '高冷貓咪演員小姐', mult: 0.9, hi: ['……這個。', '別吵，我在背台詞', '經紀人說我只能吃這些'], ok: ['……還可以。', '哼，不錯。'], mad: ['通告要遲到了。', '……走了。'] },
             { key: 'bunny', name: '小白兔小姐', mult: 1.0, hi: ['早安～', '我要這些，謝謝', '沒有紅蘿蔔嗎？那這個好了'], ok: ['謝謝你～', '好香喔！'], mad: ['我、我先走了……', '等好久喔……'] },
             { key: 'mouse', name: '老鼠奶奶', mult: 1.1, hi: ['乖孫，幫奶奶弄這個', '慢慢來沒關係', '今天也來囉'], ok: ['真乖，奶奶下次再來', '吱～好吃'], mad: ['奶奶先回去了……', '吱……等太久了'] },
@@ -1016,7 +1016,7 @@
             c.beginPath(); c.ellipse(-9.5, y, rx, rx * 0.6, 0, 0, TAU); c.ellipse(9.5, y, rx, rx * 0.6, 0, 0, TAU); c.fill();
         }
         const HEADS = {
-            // 趕公車的小狗：柴犬、尖耳朵、白眉毛點點、一根往後翹的呆毛、嘴裡咬吐司（生氣也咬著）、急的時候冒汗
+            // 趕公車的小狗：柴犬、尖耳朵、白眉毛點點、一根往後翹的呆毛、急的時候冒汗（2026-11-26 使用者說不要咬吐司）
             bus(c, L, mood) {
                 c.fillStyle = '#d98f45'; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 8 * sx, -8); c.lineTo(ex + 1 * sx, -25); c.lineTo(ex + 9 * sx, -5); c.closePath(); c.fill(); });
                 c.fillStyle = '#f6d2a6'; [[-1, -11], [1, 11]].forEach(([sx, ex]) => { c.beginPath(); c.moveTo(ex - 4 * sx, -9); c.lineTo(ex + 1 * sx, -20); c.lineTo(ex + 5.5 * sx, -8); c.closePath(); c.fill(); });
@@ -1027,14 +1027,8 @@
                 c.beginPath(); c.ellipse(-6.5, -5.5, 2.4, 1.6, 0, 0, TAU); c.ellipse(6.5, -5.5, 2.4, 1.6, 0, 0, TAU); c.fill();
                 eyes(c, -6.5, 1, 6.5, mood);
                 c.fillStyle = '#3b2a20'; c.beginPath(); c.ellipse(0, 6, 2.8, 2, 0, 0, TAU); c.fill();
-                if (mood === 'happy') { mouth(c, 0, 12, mood); blush(c, 8); }
-                else {
-                    // 咬著一片吐司（生氣也咬著，邊咬邊氣）
-                    c.save(); c.translate(4, 13); c.rotate(0.18);
-                    c.fillStyle = '#c98a3e'; rr(c, -6, -5, 12, 10, 3); c.fill();
-                    c.fillStyle = '#f6dca0'; rr(c, -4.6, -3.6, 9.2, 7.2, 2); c.fill();
-                    c.restore();
-                }
+                mouth(c, 0, 12, mood);
+                if (mood === 'happy') blush(c, 8);
                 if (mood === 'tense' || mood === 'mad') {
                     const dy = reduceMotion ? 0 : ((G.clock * 1.6) % 1) * 6;
                     c.fillStyle = '#8fd0f0'; c.beginPath(); c.moveTo(-17, -6 + dy); c.quadraticCurveTo(-13, 1 + dy, -17, 2 + dy); c.quadraticCurveTo(-21, 1 + dy, -17, -6 + dy); c.fill();
